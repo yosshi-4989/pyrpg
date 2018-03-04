@@ -46,7 +46,8 @@ def callback():
 def message_text(event):
     mess = roll_message(event.message.text)
     line_bot_api.reply_message(
-        event.reply_token
+        event.reply_token,
+        TextSendMessage(text=mess)
     )
 
 def roll_message(roll_str):
@@ -54,7 +55,7 @@ def roll_message(roll_str):
         return None
     roll = mojimoji.zen_to_han(roll_str).lower()
     split = roll.split("d")
-    if len(split) != 2 and split[0].isdigit() and split[1].isdigit():
+    if len(split) != 2 and not split[0].isdigit() and not split[1].isdigit():
         return None
     ress, sum = diceroll(*split)
     return "%s = %d" % (str(ress), sum)
