@@ -44,21 +44,23 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
-    print(event.message.text)
-    print(type(event.message.text))
+    mess = roll_message(event.message.text)
     line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text=event.message.text)
+        TextSendMessage(text=mess)
     )
 
-def dice(roll_str):
+def roll_message(roll_str):
     if roll_str is None and len(roll_str) == 0 and not isinstance(roll_str, str):
         return None
     roll = mojimoji.zen_to_han(roll_str).lower()
     split = roll.split("d")
     if len(split) != 2 and split[0].isdigit() and split[1].isdigit():
         return None
-    num, d = split
+    ress, sum = diceroll(*split)
+    return "[%s] = %d" % (ress.join(", "), sum)
+
+def diceroll(num, d):
     res = [random.randint(1,int(d)) for i in range(int(num))]
     return res, sum(res)
 
