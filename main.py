@@ -46,8 +46,7 @@ def callback():
 def message_text(event):
     mess = roll_message(event.message.text)
     line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=mess)
+        event.reply_token
     )
 
 def roll_message(roll_str):
