@@ -58,7 +58,7 @@ def roll_message(roll_str):
     if len(split) != 2 and split[0].isdigit() and split[1].isdigit():
         return None
     ress, sum = diceroll(*split)
-    return "[%s] = %d" % (ress.join(", "), sum)
+    return "[%s] = %d" % (", ".join(ress), sum)
 
 def diceroll(num, d):
     res = [random.randint(1,int(d)) for i in range(int(num))]
