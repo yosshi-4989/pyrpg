@@ -44,9 +44,11 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
+    print(event.message.text)
+    print(type(event.message.text))
     line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text=dice(event.message.text))
+        TextSendMessage(text=event.message.text)
     )
 
 def dice(roll_str):
