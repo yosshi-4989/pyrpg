@@ -45,6 +45,8 @@ def callback():
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
     mess = roll_message(event.message.text)
+    if mess is None:
+        return
     line_bot_api.reply_message(
         event.reply_token,
         TextSendMessage(text=mess)
