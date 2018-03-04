@@ -1,31 +1,14 @@
 # -*- coding: utf-8 -*-
-
-#  Licensed under the Apache License, Version 2.0 (the "License"); you may
-#  not use this file except in compliance with the License. You may obtain
-#  a copy of the License at
-#
-#       https://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-#  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-#  License for the specific language governing permissions and limitations
-#  under the License.
-
 import os
 import sys
+import random
+import mojimoji
 from argparse import ArgumentParser
 
 from flask import Flask, request, abort
-from linebot import (
-    LineBotApi, WebhookHandler
-)
-from linebot.exceptions import (
-    InvalidSignatureError
-)
-from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage,
-)
+from linebot import (LineBotApi, WebhookHandler)
+from linebot.exceptions import (InvalidSignatureError)
+from linebot.models import (MessageEvent, TextMessage, TextSendMessage,)
 
 app = Flask(__name__)
 
@@ -41,7 +24,6 @@ if channel_access_token is None:
 
 line_bot_api = LineBotApi(channel_access_token)
 handler = WebhookHandler(channel_secret)
-
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -60,14 +42,23 @@ def callback():
 
     return 'OK'
 
-
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
     line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text=event.message.text)
+        TextSendMessage(text="sample" + event.message.text)
     )
 
+def dice(roll_str):
+    if roll_str is None and len(roll_str) == 0 and not isinstance(roll_str, str):
+        return None
+    roll = mojimoji.zen_to_han(roll_str).lower()
+    split = roll.split("d")
+    if len(split) != 2 and split[0].isdigit() and split[1].isdigit():
+        return None
+    num, d = split
+    res = [random.randint(1,int(d)) for i in range(int(num))]
+    return res, sum(res)
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
