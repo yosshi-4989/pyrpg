@@ -55,7 +55,7 @@ def roll_message(roll_str):
         return None
     roll = mojimoji.zen_to_han(roll_str).lower()
     split = roll.split("d")
-    if len(split) != 2 and not split[0].isdigit() and not split[1].isdigit():
+    if len(split) != 2 or not split[0].isdigit() or not split[1].isdigit():
         return None
     ress, sum = diceroll(*split)
     return "%s = %d" % (str(ress), sum)
