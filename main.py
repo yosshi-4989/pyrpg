@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
+
+import re
 import random
 import mojimoji
-from argparse import ArgumentParser
 
 from flask import Flask, request, abort
 from linebot import (LineBotApi, WebhookHandler)
@@ -13,8 +14,8 @@ from linebot.models import (MessageEvent, TextMessage, TextSendMessage,)
 app = Flask(__name__)
 
 # get channel_secret and channel_access_token from your environment variable
-channel_secret = os.getenv('LINE_CHANNEL_SECRET', None)
-channel_access_token = os.getenv('LINE_CHANNEL_ACCESS_TOKEN', None)
+channel_secret = os.getenv('LINE_CHANNEL_SECRET', "515f90481def93fde4e350d660552868")
+channel_access_token = os.getenv('LINE_CHANNEL_ACCESS_TOKEN', "WevFY+H0fJBWwwj3x4DToN2EmWogEzMIztqHRcoLfFkbtMH/HZzFqckiCZQzpH6Hk74MkP9hxmjAuRf5U8Us/wnqPNytKN2w/yCfT8JEvgWv1XC4dAXdYy8jwPSIQ9fMHjqUSECHEGtve39kIGs+zgdB04t89/1O/w1cDnyilFU=")
 if channel_secret is None:
     print('Specify LINE_CHANNEL_SECRET as environment variable.')
     sys.exit(1)
@@ -35,8 +36,6 @@ def callback():
     app.logger.info("Request body: " + body)
 
     # handle webhook body
-    print(signature)
-    print(body)
     try:
         handler.handle(body, signature)
     except InvalidSignatureError:
@@ -46,29 +45,66 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
-    print(event.message)
-    mess = roll_message(event.message.text)
-    if mess is None:
+    msg = roll_message(event.message.text)
+    if msg is None:
         abort(400)
     else:
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text=mess)
+            TextSendMessage(text=msg)
         )
 
 def roll_message(roll_str):
     if roll_str is None and len(roll_str) == 0 and not isinstance(roll_str, str):
         return None
     roll = mojimoji.zen_to_han(roll_str).lower()
-    split = roll.split("d")
-    if len(split) != 2 or not split[0].isdigit() or not split[1].isdigit():
-        return None
-    ress, sum = diceroll(*split)
-    return "%s = %d" % (str(ress), sum)
+    if "<" in roll or ">" in roll or "=" in roll:
+        msg = hantei_roll(roll)
+    else:
+        msg = dice_roll(roll)
+    return msg
 
-def diceroll(num, d):
-    res = [random.randint(1,int(d)) for i in range(int(num))]
-    return res, sum(res)
+def hantei_roll(roll):
+    roll_dice, opr, obj_point = re.sub(" *([^0-9]*[<>=][^0-9]*) *", "\t\\1\t", roll).split("\t")
+    deme, deme_sum = dice_roll(roll_dice).split(" = ")[1:]
+    is_success = success(int(deme_sum), int(obj_point), opr)
+    msg = "%s = %s = %s %s %s %s" % (roll_dice, str(deme), deme_sum, opr, obj_point, is_success)
+    return msg
+
+def dice_roll(roll):
+    num, dice = split_dice(roll)
+    if num is None:
+        return None
+    result = rolling(num, dice)
+    return "%s = %s = %d" % (roll, str(result), sum(result))
+
+def split_dice(msg):
+    split = msg.split("d")
+    if len(split) != 2 or not split[0].isdigit() or not split[1].isdigit():
+        return None, None
+    return split
+
+def rolling(num, dice):
+    return [random.randint(1,int(dice)) for _ in range(int(num))]
+
+def success(deme, obj_point, operater):
+    operater = operater.strip()
+    print(operater)
+    results = {True: "成功", False: "失敗", None: "不明"}
+    is_success = None
+    if operater == "<=":
+        is_success = deme <= obj_point
+    elif operater == "<":
+        is_success = deme < obj_point
+    elif operater == ">":
+        is_success = deme > obj_point
+    elif operater == ">=":
+        is_success = deme >= obj_point
+    elif operater == "=":
+        is_success = deme >= obj_point
+    else:
+        is_success = None
+    return results[is_success]
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
