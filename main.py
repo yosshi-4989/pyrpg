@@ -13,8 +13,8 @@ from linebot.models import (MessageEvent, TextMessage, TextSendMessage,)
 app = Flask(__name__)
 
 # get channel_secret and channel_access_token from your environment variable
-channel_secret = os.getenv('LINE_CHANNEL_SECRET', None)
-channel_access_token = os.getenv('LINE_CHANNEL_ACCESS_TOKEN', None)
+channel_secret = os.getenv('LINE_CHANNEL_SECRET', "")
+channel_access_token = os.getenv('LINE_CHANNEL_ACCESS_TOKEN', "")
 if channel_secret is None:
     print('Specify LINE_CHANNEL_SECRET as environment variable.')
     sys.exit(1)
@@ -58,7 +58,7 @@ def roll_message(roll_str):
     if len(split) != 2 and split[0].isdigit() and split[1].isdigit():
         return None
     ress, sum = diceroll(*split)
-    return "[%s] = %d" % (", ".join(ress), sum)
+    return "%s = %d" % (str(ress), sum)
 
 def diceroll(num, d):
     res = [random.randint(1,int(d)) for i in range(int(num))]
