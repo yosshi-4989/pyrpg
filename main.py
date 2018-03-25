@@ -7,7 +7,7 @@ import random
 import mojimoji
 
 from flask import Flask, request, abort
-from linebot import (LineBotApi, WebhookHandler)
+from linebot import (LineBotApi, WebhookHandler, )
 from linebot.exceptions import (InvalidSignatureError)
 from linebot.models import (MessageEvent, TextMessage, TextSendMessage,)
 
@@ -45,7 +45,14 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
-    msg = roll_message(event.message.text)
+    print(event)
+    user_name = get_user_name(event.source)
+    print(user_name)
+    lines = event.message.text.split("\n")
+    msgs = []
+    for line in lines:
+      msgs.append(user_name + roll_message(line))
+    msg = "\n".join(msgs)
     if msg is None:
         abort(400)
     else:
@@ -55,6 +62,7 @@ def message_text(event):
         )
 
 def roll_message(roll_str):
+    print(roll_str)
     if roll_str is None and len(roll_str) == 0 and not isinstance(roll_str, str):
         return None
     roll = mojimoji.zen_to_han(roll_str).lower()
@@ -105,6 +113,22 @@ def success(deme, obj_point, operater):
     else:
         is_success = None
     return results[is_success]
+
+def get_user_name(source):
+    chat_type = source.type
+    if chat_type == "group":
+        group_id = source.group_id
+        user_id = source.user_id
+        user_info = line_bot_api.get_group_member_profile(group_id, user_id)
+        user_name = user_info.display_name + ": "
+    elif chat_type == "room":
+        room_id = source.room_id
+        user_id = source.user_id
+        user_info = line_bot_api.get_room_member_profile(room_id, user_id)
+        user_name = user_info.display_name + ": "
+    else:
+        user_name = ""
+    return user_name
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
