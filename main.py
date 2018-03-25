@@ -45,32 +45,70 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
-    print(event)
     user_name = get_user_name(event.source)
-    print(user_name)
     lines = event.message.text.split("\n")
     msgs = []
     for line in lines:
-      msgs.append(user_name + roll_message(line))
-    msg = "\n".join(msgs)
-    if msg is None:
+        msg = roll_message(line)
+        if msg is not  None:
+            msgs.append(msg)
+
+    if msgs is None or len(msgs) == 0:
         abort(400)
     else:
+        msg = user_name + "\n".join(msgs)
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text=msg)
         )
 
 def roll_message(roll_str):
-    print(roll_str)
     if roll_str is None and len(roll_str) == 0 and not isinstance(roll_str, str):
         return None
     roll = mojimoji.zen_to_han(roll_str).lower()
-    if "<" in roll or ">" in roll or "=" in roll:
+    if roll.startswith("dcoc"):
+        msg = roll_coc(roll)
+    elif "<" in roll or ">" in roll or "=" in roll:
         msg = hantei_roll(roll)
     else:
         msg = dice_roll(roll)
     return msg
+
+def roll_coc(roll):
+    obj_point = roll[4:]
+    print(obj_point)
+    roll_val = rolling(1, 100)[0]
+    if obj_point:
+        point = int(obj_point)
+        msg = result_coc(roll_val, point)
+    else:
+        return "1d100 = %d" % roll_val
+    return "1d100 = %d <= %s -> %s" % (roll_val, obj_point, msg)
+
+CRITICAL_MESSAGE = {
+    True: "クリティカル",
+    False: "失敗"
+}
+FUMBLE_MESSAGE = {
+    True: "成功",
+    False: "ファンブル"
+}
+RESULT_MESSAGE = {
+    True: "成功",
+    False: "失敗"
+}
+def result_coc(val, obj):
+    msgs = []
+    is_success = val <= obj
+    if val <= 5:
+        msgs.append(CRITICAL_MESSAGE[is_success])
+    if val <= (obj / 5):
+        msgs.append("スペシャル")
+    if val >= 96:
+        msgs.append(FUMBLE_MESSAGE[is_success])
+    if len(msgs) == 0:
+        return RESULT_MESSAGE[is_success]
+    return "/".join(msgs)
 
 def hantei_roll(roll):
     roll_dice, opr, obj_point = re.sub(" *([^0-9]*[<>=][^0-9]*) *", "\t\\1\t", roll).split("\t")
@@ -109,7 +147,7 @@ def success(deme, obj_point, operater):
     elif operater == ">=":
         is_success = deme >= obj_point
     elif operater == "=":
-        is_success = deme >= obj_point
+        is_success = deme == obj_point
     else:
         is_success = None
     return results[is_success]
@@ -120,12 +158,12 @@ def get_user_name(source):
         group_id = source.group_id
         user_id = source.user_id
         user_info = line_bot_api.get_group_member_profile(group_id, user_id)
-        user_name = user_info.display_name + ": "
+        user_name = user_info.display_name + "\n"
     elif chat_type == "room":
         room_id = source.room_id
         user_id = source.user_id
         user_info = line_bot_api.get_room_member_profile(room_id, user_id)
-        user_name = user_info.display_name + ": "
+        user_name = user_info.display_name + "\n"
     else:
         user_name = ""
     return user_name
